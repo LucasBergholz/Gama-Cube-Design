@@ -69,27 +69,26 @@ int main() {
             if (contourSize >= maxContour) { maxContour = contourSize; biggestContour = count2; }
             count2++;
         }
-        drawContours(output, contours, biggestContour, Scalar(0, 255, 0), 3);
+        drawContours(output, contours, -1, Scalar(0, 255, 0), 3);
 
-        int x = 0;
-        int y = 0;
-        count2 = 0;
-
+        int k = 0;
         for (auto i : contours) {
-            for (auto j : contours[biggestContour]) {
-                if (contours[biggestContour].size()) {
-                    x = x + contours[biggestContour][count2].x;
-                    y = y + contours[biggestContour][count2].y;
+            int x = 0;
+            int y = 0;
+            count2 = 0;
+            for (auto j : contours[k]) {
+                if (contours[k].size()) {
+                    x = x + contours[k][count2].x;
+                    y = y + contours[k][count2].y;
                 }
                 count2++;
             }
-            break;
-        }
-
-        if (count2 > 0) {printf("%d e %d\n", x/count2, y/count2);}
-        if (x != 0 && y != 0) {
-            Point p(x / count2, y / count2);
-            circle(output, p, 3, Scalar(0, 0, 255), -1);
+            k++;
+            if (count2 > 0) { printf("%d e %d\n", x / count2, y / count2); }
+            if (x != 0 && y != 0) {
+                Point p(x / count2, y / count2);
+                circle(output, p, 3, Scalar(0, 0, 255), -1);
+            }
         }
 
         // coordinates of centroid
