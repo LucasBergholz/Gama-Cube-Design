@@ -17,10 +17,10 @@ int main() {
     // Definindo o video a ser tratado de acordo com a entrada do usuario
     string videoPath;
     if (numVideo == 1) {
-        videoPath = "C:\\Users\\Lucas Bergholz\\Documents\\GAMA CUBE DESIGN\\CodigosSomados\\gif0" + stringVideo + ".gif";
+        videoPath = "gif0" + stringVideo + ".gif";
     }
     else {
-        videoPath = "C:\\Users\\Lucas Bergholz\\Documents\\GAMA CUBE DESIGN\\CodigosSomados\\gif0" + stringVideo + ".mp4";
+        videoPath = "gif0" + stringVideo + ".mp4";
     }
     // Criar VideoCapture
     VideoCapture capture(videoPath);
@@ -71,27 +71,21 @@ int main() {
         }
         drawContours(output, contours, -1, Scalar(0, 255, 0), 3);
 
-        int k = 0;
-        for (auto i : contours) {
-            int x = 0;
-            int y = 0;
-            count2 = 0;
-            for (auto j : contours[k]) {
-                if (contours[k].size()) {
-                    x = x + contours[k][count2].x;
-                    y = y + contours[k][count2].y;
-                }
-                count2++;
-            }
-            k++;
-            if (count2 > 0) { printf("%d e %d\n", x / count2, y / count2); }
-            if (x != 0 && y != 0) {
-                Point p(x / count2, y / count2);
-                circle(output, p, 3, Scalar(0, 0, 255), -1);
-            }
-        }
+        for (size_t i = 0; i < contours.size(); ++i) {
+            // Calcular os moments
+            Moments mu = moments(contours[i]);
 
-        // coordinates of centroid
+            // Calcular coordenadas dos centroides
+            Point2f centroid;
+            centroid.x = mu.m10 / mu.m00;
+            centroid.y = mu.m01 / mu.m00;
+
+            // Draw a circle at the centroid
+            circle(output, centroid, 3, Scalar(255, 0, 0), -1);
+
+            // Print das coordenadas
+            cout << "Centroid of Contour " << i << ": (" << centroid.x << ", " << centroid.y << ")" << endl;
+        }
         printf("%d:\n\n\n\n", countOfFrames);
 
         imshow("frame cinza", greyFrame);
