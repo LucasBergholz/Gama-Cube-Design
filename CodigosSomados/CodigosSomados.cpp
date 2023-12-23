@@ -81,7 +81,8 @@ int main() {
             centroid.y = mu.m01 / mu.m00;
 
             // Draw a circle at the centroid
-            circle(output, centroid, 3, Scalar(255, 0, 0), -1);
+            circle(output, centroid, 3, Scalar(0, 0, 255), -1);
+            circle(greyFrame, centroid, 3, Scalar(0, 0, 255), -1);
 
             // Print das coordenadas
             cout << "Centroid of Contour " << i << ": (" << centroid.x << ", " << centroid.y << ")" << endl;
