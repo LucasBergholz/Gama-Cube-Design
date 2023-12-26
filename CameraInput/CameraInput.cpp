@@ -11,7 +11,7 @@ using namespace cv;
 
 int main() {
     // Criar diretorio que vai armazenar o video
-    string path = "C:\\Users\\Lucas Bergholz\\Documents\\GAMA CUBE DESIGN\\CameraInput\\camera_video";
+    string path = "camera_video";
     if (CreateDirectory(path.c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {
         printf("Pressione qualquer tecla para iniciar a gravação...\n");
         waitKey(0);
@@ -39,14 +39,14 @@ int main() {
 
         imshow("Webcam", frame);
         // Grava o frame no folder designado
-        imwrite("C:\\Users\\Lucas Bergholz\\Documents\\GAMA CUBE DESIGN\\CameraInput\\camera_video\\frame_" + to_string(numberOfFrames++) + ".png", frame);
+        imwrite("camera_video\\frame_" + to_string(numberOfFrames++) + ".png", frame);
         // Escolhe o tempo de distancia entre os frames
         if (waitKey(100) >= 0) break;
     }
 
     int countOfFrames = 0;
     while (numberOfFrames--) {
-        Mat greyFrame = imread("C:\\Users\\Lucas Bergholz\\Documents\\GAMA CUBE DESIGN\\CameraInput\\camera_video\\frame_" + to_string(countOfFrames++) + ".png", 0);
+        Mat greyFrame = imread("camera_video\\frame_" + to_string(countOfFrames++) + ".png", 0);
         GaussianBlur(greyFrame, greyFrame, Size(5, 5), 0);
         Mat threshFrame;
 
