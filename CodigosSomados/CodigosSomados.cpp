@@ -11,7 +11,7 @@ int main() {
 
     // Recebendo entrada de qual video sera tratado
     int numVideo;
-    cout << "Escolha um video: (1 ou 2)\n";
+    cout << "Escolha um video: (1 ou 2 ou 3)\n";
     cin >> numVideo;
     string stringVideo = to_string(numVideo);
 
@@ -19,6 +19,9 @@ int main() {
     string videoPath;
     if (numVideo == 1) {
         videoPath = "gif0" + stringVideo + ".gif";
+    }
+    else if (numVideo == 2){
+        videoPath = "gif0" + stringVideo + ".mp4";
     }
     else {
         videoPath = "gif0" + stringVideo + ".mp4";
@@ -101,19 +104,20 @@ int main() {
 
         //Discriminar centroides
         vector<Point2f> finalCentroids(contours.size()); //Vetor que guarda os centroids apos discriminacao
-        for (size_t i = 0; i < c.centroids.size(); ++i) {
-            for (size_t j = i; j < c.centroids.size(); ++j) {
-                if (c.visited[j]) continue; // Se o centroid ja foi visitado, pula pro proximo
-                if (abs(c.centroids[i].x - c.centroids[j].x) <= 20 && abs(c.centroids[i].y - c.centroids[j].y) <= 20) { // abs serve para achar o modulo, se o modulo da diferenca for menor/igual a 20 entra
-                    int printed;
-                    if (contours[i].size() >= contours[j].size()) printed = i;
-                    else printed = j;
-
-                    finalCentroids[i] = c.centroids[printed];
-                    c.visited[i] = 1;
-                    c.visited[j] = 1;
+        for (size_t i = 0; i < c.centroids.size(); i++) {
+            int biggestPoint = i;
+            if (!c.visited[i]) { // Se o centroid nao tiver sido visitado ainda, compare ele com os demais
+                for (size_t j = i+1; j < c.centroids.size(); j++) {
+                    if (c.visited[j]) continue; // Se o centroid ja foi visitado, pula pro proximo
+                    cout << abs(c.centroids[i].x - c.centroids[j].x) << "  " << abs(c.centroids[i].y - c.centroids[j].y) << endl;
+                    if (abs(c.centroids[i].x - c.centroids[j].x) <= 30 && abs(c.centroids[i].y - c.centroids[j].y) <= 30) { // abs serve para achar o modulo, se o modulo da diferenca for menor/igual a 20 entra
+                        if (contours[biggestPoint].size() < contours[j].size()) biggestPoint = j;
+                        c.visited[j] = 1;
+                    }
                 }
+                finalCentroids[i] = c.centroids[biggestPoint];
             }
+            c.visited[i] = 1;
         }
 
         for (size_t i = 0; i < finalCentroids.size(); ++i) {
