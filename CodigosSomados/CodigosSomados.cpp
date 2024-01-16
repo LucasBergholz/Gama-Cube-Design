@@ -55,6 +55,8 @@ int main() {
         cv::imwrite(filename, frame);
     }
 
+    vector<double> biggestAreas(numberOfFrames, 0);
+
     int countOfFrames = 0;
     while (numberOfFrames--) {
         Mat greyFrame = imread("frames_gif_0" + stringVideo + "\\frame_" + to_string(countOfFrames++) + ".png", 0);
@@ -135,6 +137,7 @@ int main() {
                 circle(output, finalCentroids[i], 3, Scalar(0, 0, 255), -1);
                 circle(greyFrame, finalCentroids[i], 3, Scalar(0, 0, 255), -1);
             }
+            vector<Point2f>().swap(finalCentroids);
 
         } else {
             /*
@@ -173,6 +176,8 @@ int main() {
                 printf("Area %d: %f\n", i, areas[i]);
             }
             printf("\n\nArea Total = %f\n\n", totalArea);
+            biggestAreas[countOfFrames-1] = totalArea;
+            vector<double>().swap(areas);
         }
 
         imshow("frame cinza", greyFrame);
@@ -182,6 +187,9 @@ int main() {
 
     }
 
+    for (size_t i = 0; i < biggestAreas.size(); i++) {
+        printf("%f\n", biggestAreas[i]);
+    }
     waitKey(0);
 
     return 0;
