@@ -52,10 +52,11 @@ int main() {
             break;
         }
         string filename = "frames_gif_0" + stringVideo + "/frame_" + to_string(numberOfFrames++) + ".png";
-        cv::imwrite(filename, frame);
+        imwrite(filename, frame);
     }
 
     vector<double> biggestAreas(numberOfFrames, 0);
+    vector<int> indexOfContours(numberOfFrames, 0);
 
     int countOfFrames = 0;
     while (numberOfFrames--) {
@@ -84,6 +85,7 @@ int main() {
             if (contourSize >= maxContour) { maxContour = contourSize; biggestContour = count2; }
             count2++;
         }
+        indexOfContours[countOfFrames - 1] = biggestContour; //Passando index do maior contorno para o vetor que guarda os index dos maiores contornos de cada frame
         drawContours(output, contours, -1, Scalar(0, 255, 0), FILLED);
 
         //Achar os centroides
@@ -132,12 +134,13 @@ int main() {
                 c.visited[i] = 1;
             }
 
+            //Desenhar circulos nos centroides
             for (size_t i = 0; i < finalCentroids.size(); ++i) {
                 if ((finalCentroids[i].x + finalCentroids[i].y == 0)) continue;
                 circle(output, finalCentroids[i], 3, Scalar(0, 0, 255), -1);
                 circle(greyFrame, finalCentroids[i], 3, Scalar(0, 0, 255), -1);
             }
-            vector<Point2f>().swap(finalCentroids);
+            
 
         } else {
             /*
@@ -171,24 +174,95 @@ int main() {
                 }
                 c.visited[i] = 1;
             }
+
             for (size_t i = 0; i < c.centroids.size(); i++) {
-                if (areas[i] >= totalArea) totalArea = areas[i];
+                if (areas[i] >= totalArea) {
+                    totalArea = areas[i];
+                }
                 printf("Area %d: %f\n", i, areas[i]);
             }
             printf("\n\nArea Total = %f\n\n", totalArea);
             biggestAreas[countOfFrames-1] = totalArea;
-            vector<double>().swap(areas);
         }
 
-        imshow("frame cinza", greyFrame);
-        imshow("oie", output);
+        //imshow("frame cinza", greyFrame);
+        // imshow("oie", output);
 
-        waitKey(0);
+        //waitKey(0);
 
     }
 
-    for (size_t i = 0; i < biggestAreas.size(); i++) {
-        printf("%f\n", biggestAreas[i]);
+    if (scene == 2) {
+        // Achar qual o frame de maior area
+        int indexOfFrameOfBiggestContour = 0;
+        double biggestContourFrames = 0;
+        for (size_t i = 0; i < biggestAreas.size(); i++) {
+            if (biggestContourFrames < biggestAreas[i]) {
+                indexOfFrameOfBiggestContour = i;
+                biggestContourFrames = biggestAreas[i];
+            }
+            printf("%f\n", biggestAreas[i]);
+        }
+
+        printf("Index aqui: %d\n", indexOfFrameOfBiggestContour);
+
+        //Calcular centroide desse raio para realizar pointPolygonTest
+        //Realizando tratamento da imagem pra achar novamente o contorno
+        Mat frameBiggestContour = imread("frames_gif_0" + stringVideo + "\\frame_" + to_string(indexOfFrameOfBiggestContour) + ".png", 0);
+        GaussianBlur(frameBiggestContour, frameBiggestContour, Size(5, 5), 0);
+        threshold(frameBiggestContour, frameBiggestContour, 200, 255, THRESH_BINARY);
+        vector<Vec4i> hierarchy;
+        vector<vector<Point>> contours;
+        
+        Mat output = Mat::zeros(frameBiggestContour.size(), CV_8UC3);
+        findContours(frameBiggestContour, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE); //Contornos encontrados
+        drawContours(output, contours, indexOfContours[indexOfFrameOfBiggestContour], Scalar(0, 255, 0), FILLED);
+        // Calcular os moments
+        Moments mu = moments(contours[indexOfContours[indexOfFrameOfBiggestContour]]);
+        // Calcular coordenadas dos centroides
+        Point2f centroide;
+        centroide.x = mu.m10 / mu.m00;
+        centroide.y = mu.m01 / mu.m00;
+        circle(output, centroide, 3, Scalar(0, 0, 255), -1);
+        //imshow("Testando1", frameBiggestContour);
+        //imshow("Testando", output);
+        //printf("\n Area = %f \n", contourArea(contours[indexOfContours[indexOfFrameOfBiggestContour]]));
+        //cout << centroide << endl;
+
+        // Rastrear quantos frames esse raio existe, primeiro pra frente e depois pra trás
+        int duration = 1;
+        int nextIndex = indexOfFrameOfBiggestContour + 1;
+        while (true)
+        {
+            if (nextIndex == countOfFrames) break;
+            //Hora de achar os contornos do frame da frente
+            Mat nextFrame = imread("frames_gif_0" + stringVideo + "\\frame_" + to_string(nextIndex) + ".png", 0);
+            GaussianBlur(nextFrame, nextFrame, Size(5, 5), 0);
+            threshold(nextFrame, nextFrame, 200, 255, THRESH_BINARY);
+            vector<Vec4i> nextHierarchy;
+            vector<vector<Point>> nextContours;
+            findContours(nextFrame, nextContours, nextHierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE); //Contornos encontrados
+            if (!contours.size()) {
+                cout << "Acabou aqui" << endl;
+                break;
+            }
+            drawContours(output, nextContours, -1, Scalar(255 - (duration * 10), (duration * 10), (duration * 5)), 3);
+            int beforeCheckDuration = duration;
+            for (size_t i = 0; i < nextContours.size(); i++)
+            {
+                int isInside = pointPolygonTest(nextContours[i], centroide, true);
+                if (isInside >= -30) {
+                    duration++;
+                    cout << isInside << " e frame numero: " << nextIndex << endl;
+                    break;
+                }
+            }
+            imshow("Testando", output);
+            waitKey(200);
+            if(beforeCheckDuration == duration) break;
+            nextIndex++;
+        }
+        printf("Duracao = %d\n", duration);
     }
     waitKey(0);
 
