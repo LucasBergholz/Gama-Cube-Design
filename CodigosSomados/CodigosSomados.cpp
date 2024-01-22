@@ -231,10 +231,11 @@ int main() {
 
         // Rastrear quantos frames esse raio existe, primeiro pra frente e depois pra trás
         int duration = 1;
-        int nextIndex = indexOfFrameOfBiggestContour + 1;
+        int count = 1;
+        int nextIndex = indexOfFrameOfBiggestContour + count;
         while (true)
         {
-            if (nextIndex == countOfFrames) break;
+            if (nextIndex == countOfFrames || nextIndex < 0) break;
             //Hora de achar os contornos do frame da frente
             Mat nextFrame = imread("frames_gif_0" + stringVideo + "\\frame_" + to_string(nextIndex) + ".png", 0);
             GaussianBlur(nextFrame, nextFrame, Size(5, 5), 0);
@@ -247,20 +248,39 @@ int main() {
                 break;
             }
             drawContours(output, nextContours, -1, Scalar(255 - (duration * 10), (duration * 10), (duration * 5)), 3);
+            //Se o valor do beforeCheckDuration nao mudar, e pq nenhum raio passou no pointPolygonTest
             int beforeCheckDuration = duration;
             for (size_t i = 0; i < nextContours.size(); i++)
             {
                 int isInside = pointPolygonTest(nextContours[i], centroide, true);
-                if (isInside >= -30) {
+                if (isInside >= -10) {
+                    //Se estiver dentro de 10px de distancia do centroide atual, atualizar o centroide
+                    // Calcular os moments
+                    mu = moments(nextContours[i]);
+                    // Calcular coordenadas dos centroides
+                    centroide.x = mu.m10 / mu.m00;
+                    centroide.y = mu.m01 / mu.m00;
+                    circle(output, centroide, 3, Scalar(0, 0, 255), -1);
                     duration++;
-                    cout << isInside << " e frame numero: " << nextIndex << endl;
+                    cout << isInside << " e frame numero: " << nextIndex << " e centroide: " << centroide << endl;
                     break;
                 }
             }
             imshow("Testando", output);
             waitKey(200);
-            if(beforeCheckDuration == duration) break;
-            nextIndex++;
+            // Quando chegar no frame pra frente que o raio acaba, inverte o count pra comecar a procurar quando ele comeca
+            if (beforeCheckDuration == duration) {
+                if (count == -1) break; //Se o count = -1 e pq ja checou o raio pra frente, se entrou nesse if denovo e pq ja checou o raio pra tras
+                nextIndex = indexOfFrameOfBiggestContour;
+                //Retornar o centroide para a posicao de inicio
+                // Calcular os moments
+                mu = moments(contours[indexOfContours[indexOfFrameOfBiggestContour]]);
+                // Calcular coordenadas dos centroides
+                centroide.x = mu.m10 / mu.m00;
+                centroide.y = mu.m01 / mu.m00;
+                count = -1;
+            }
+            nextIndex += count;
         }
         printf("Duracao = %d\n", duration);
     }
