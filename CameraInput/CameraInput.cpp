@@ -3,7 +3,6 @@
 #include <iostream>
 #include <stdio.h>
 #include <opencv2/imgproc.hpp>
-#include <windows.h>
 
 using namespace std;
 using namespace cv;
@@ -14,17 +13,6 @@ int main() {
     int scene;
     cout << "Escolha uma cena: (1 ou 2)\n";
     cin >> scene;
-
-    // Criar diretorio que vai armazenar o video
-    string path = "camera_video";
-    if (CreateDirectory(path.c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {
-        printf("Pressione qualquer tecla para iniciar a gravação...\n");
-        waitKey(0);
-    }
-    else {
-        std::cerr << "Failed to create directory: " << path << std::endl;
-        return -1;
-    }
 
     // Criar VideoCapture
     VideoCapture capture(0);
@@ -41,17 +29,16 @@ int main() {
         // Ler o frame
         Mat frame;
         capture >> frame;
-
         imshow("Webcam", frame);
         // Grava o frame no folder designado
         imwrite("camera_video\\frame_" + to_string(numberOfFrames++) + ".png", frame);
         // Escolhe o tempo de distancia entre os frames
+        // comando de espera + comando scanf
         if (waitKey(100) >= 0) break;
     }
 
     // Vetores que guardarao as maiores areas e o index de cada maior contorno, por frame
     vector<double> biggestAreas(numberOfFrames, 0);
-    vector<int> indexOfContours(numberOfFrames, 0);
 
     int countOfFrames = 0;
     while (numberOfFrames--) {
@@ -65,18 +52,7 @@ int main() {
         vector<vector<Point>> contours;
 
         Mat output = Mat::zeros(greyFrame.size(), CV_8UC3);
-        findContours(threshFrame, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);
-
-        int count2 = 0; // Contador para percorrer os Contornos
-        int maxContour = 0; // Qtdade de pontos do contorno
-        int biggestContour = 0; //Index do maior raio
-        // Pegar indice do maior raio
-        for (auto i : contours) {
-            int contourSize = contours[count2].size();
-            if (contourSize >= maxContour) { maxContour = contourSize; biggestContour = count2; }
-            count2++;
-        }
-        drawContours(output, contours, -1, Scalar(0, 255, 0), 3);
+        findContours(threshFrame, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);        
 
         //Achar os centroides
         struct centroides { // Struct que guardara os centroids
@@ -96,14 +72,6 @@ int main() {
             // Calcular coordenadas dos centroides
             c.centroids[i].x = mu.m10 / mu.m00;
             c.centroids[i].y = mu.m01 / mu.m00;
-            // Draw a circle at the centroid
-            //circle(output, c.centroids[printed], 3, Scalar(0, 0, 255), -1);
-            //circle(greyFrame, c.centroids[printed], 3, Scalar(0, 0, 255), -1);
-
-            // Print das coordenadas
-            //cout << "Centroid of Contour " << i << ": (" << c.centroids[i].x << ", " << c.centroids[i].y << ")" << endl;
-            // Print das coordenadas e valor da area
-            //cout << "Contour " << i << ": " << contourArea(contours[i]) << endl;
         }
 
         if (scene == 1) {
@@ -126,31 +94,9 @@ int main() {
                 c.visited[i] = 1;
             }
 
-            //Desenhar circulos nos centroides
-            for (size_t i = 0; i < finalCentroids.size(); ++i) {
-                if ((finalCentroids[i].x + finalCentroids[i].y == 0)) continue;
-                circle(output, finalCentroids[i], 3, Scalar(0, 0, 255), -1);
-                circle(greyFrame, finalCentroids[i], 3, Scalar(0, 0, 255), -1);
-            }
-
 
         }
         else {
-            /*
-            //Somar area
-            double totalArea = contourArea(contours[biggestContour]);
-
-            //Loop que checara quais contornos estao a uma distancia de 30px do maior contorno de todos, levando em conta o centroide
-            for (size_t j = 0; j < c.centroids.size(); j++) {
-                if (j == biggestContour) continue; // Se o contorno for o maior, pula, pois ele é a referencia
-                if (abs(c.centroids[biggestContour].x - c.centroids[j].x) <= 30 && abs(c.centroids[biggestContour].y - c.centroids[j].y) <= 30) { // abs serve para achar o modulo, se o modulo da diferenca for menor/igual a 20 entra
-                    totalArea += contourArea(contours[j]);
-                    printf("%d ", j);
-                }
-            }
-
-            /*Isso esta levando em conta o maior raio como parametro, e nao a maior soma de raios, existe um mundo onde
-            4 raios pequenos tem area maior q um raio grande, devo mudar este codigo*/
             //Metodo correto considerando descrepancias de areas
             double totalArea = 0;
             vector<double> areas(contours.size(), 0); //Vetor que guarda as areas apos discriminacao
@@ -176,13 +122,6 @@ int main() {
             biggestAreas[countOfFrames - 1] = totalArea;
         }
 
-        imshow("frame cinza", greyFrame);
-        imshow("oie", output);
-
-        waitKey(0);
-        string filename = "C:\\Users\\Lucas Bergholz\\Documents\\GAMA CUBE DESIGN\\CameraInput\\camera_video\\frame_" + to_string(countOfFrames - 1) + ".png";
-        //remove(filename.c_str());
-
     }
 
     if (scene == 2) {
@@ -194,7 +133,6 @@ int main() {
                 indexOfFrameOfBiggestContour = i;
                 biggestContourFrames = biggestAreas[i];
             }
-            printf("%f\n", biggestAreas[i]);
         }
 
         printf("Index aqui: %d\n Maior Area aqui: %d\n", indexOfFrameOfBiggestContour, biggestAreas[indexOfFrameOfBiggestContour]);
@@ -209,18 +147,21 @@ int main() {
 
         Mat output = Mat::zeros(frameBiggestContour.size(), CV_8UC3);
         findContours(frameBiggestContour, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE); //Contornos encontrados
-        drawContours(output, contours, indexOfContours[indexOfFrameOfBiggestContour], Scalar(0, 255, 0), FILLED);
+        int count2 = 0; // Contador para percorrer os Contornos
+        int maxContour = 0; // Qtdade de pontos do contorno
+        int biggestContour = 0; //Index do maior raio
+        // Pegar indice do maior raio
+        for (auto i : contours) {
+            int contourSize = contours[count2].size();
+            if (contourSize >= maxContour) { maxContour = contourSize; biggestContour = count2; }
+            count2++;
+        }
         // Calcular os moments
-        Moments mu = moments(contours[indexOfContours[indexOfFrameOfBiggestContour]]);
+        Moments mu = moments(contours[biggestContour]);
         // Calcular coordenadas dos centroides
         Point2f centroide;
         centroide.x = mu.m10 / mu.m00;
         centroide.y = mu.m01 / mu.m00;
-        circle(output, centroide, 3, Scalar(0, 0, 255), -1);
-        //imshow("Testando1", frameBiggestContour);
-        //imshow("Testando", output);
-        //printf("\n Area = %f \n", contourArea(contours[indexOfContours[indexOfFrameOfBiggestContour]]));
-        //cout << centroide << endl;
 
         // Rastrear quantos frames esse raio existe, primeiro pra frente e depois pra trás
         int duration = 1;
@@ -240,7 +181,6 @@ int main() {
                 cout << "Acabou aqui" << endl;
                 break;
             }
-            drawContours(output, nextContours, -1, Scalar(255 - (duration * 10), (duration * 10), (duration * 5)), 3);
             //Se o valor do beforeCheckDuration nao mudar, e pq nenhum raio passou no pointPolygonTest
             int beforeCheckDuration = duration;
             for (size_t i = 0; i < nextContours.size(); i++)
@@ -253,21 +193,18 @@ int main() {
                     // Calcular coordenadas dos centroides
                     centroide.x = mu.m10 / mu.m00;
                     centroide.y = mu.m01 / mu.m00;
-                    circle(output, centroide, 3, Scalar(0, 0, 255), -1);
                     duration++;
                     cout << isInside << " e frame numero: " << nextIndex << " e centroide: " << centroide << endl;
                     break;
                 }
             }
-            imshow("Testando", output);
-            waitKey(200);
             // Quando chegar no frame pra frente que o raio acaba, inverte o count pra comecar a procurar quando ele comeca
             if (beforeCheckDuration == duration) {
                 if (count == -1) break; //Se o count = -1 e pq ja checou o raio pra frente, se entrou nesse if denovo e pq ja checou o raio pra tras
                 nextIndex = indexOfFrameOfBiggestContour;
                 //Retornar o centroide para a posicao de inicio
                 // Calcular os moments
-                mu = moments(contours[indexOfContours[indexOfFrameOfBiggestContour]]);
+                mu = moments(contours[biggestContour]);
                 // Calcular coordenadas dos centroides
                 centroide.x = mu.m10 / mu.m00;
                 centroide.y = mu.m01 / mu.m00;
