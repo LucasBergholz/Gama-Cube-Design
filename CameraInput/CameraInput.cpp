@@ -3,15 +3,29 @@
 #include <iostream>
 #include <stdio.h>
 #include <opencv2/imgproc.hpp>
+#include <thread>
 
 using namespace std;
 using namespace cv;
+
+// Variável para indicar se o loop deve ser interrompido
+bool stopLoop = false;
+
+// Função que verifica a entrada do teclado
+void checkInput() {
+    while (true) {
+        if (cin.get() == 'q') {
+            ::stopLoop = true;
+            break;
+        }
+    }
+}
 
 
 int main() {
     // Recebendo entrada de qual tratamento sera realizado
     int scene;
-    cout << "Escolha uma cena: (1 ou 2)\n";
+    std::cout << "Escolha uma cena: (1 ou 2)\n";
     cin >> scene;
 
     // Criar VideoCapture
@@ -24,23 +38,30 @@ int main() {
     }
 
     int numberOfFrames = 0;
+    thread inputThread(checkInput);
     // Loop para pegar cada frame
-    while (true) {
+    while (!::stopLoop) {
         // Ler o frame
         Mat frame;
         capture >> frame;
-        imshow("Webcam", frame);
         // Grava o frame no folder designado
         imwrite("camera_video\\frame_" + to_string(numberOfFrames++) + ".png", frame);
         // Escolhe o tempo de distancia entre os frames
         // comando de espera + comando scanf
-        if (waitKey(100) >= 0) break;
+        //if (waitKey(100) >= 0) break;
+        
+        // Escolhe o tempo de distancia entre os frames
+        // Adiciona um pequeno delay
+        this_thread::sleep_for(chrono::milliseconds(100));
     }
+
+    inputThread.join();
 
     // Vetores que guardarao as maiores areas e o index de cada maior contorno, por frame
     vector<double> biggestAreas(numberOfFrames, 0);
 
-    int countOfFrames = 0;
+    int countOfFrames = 1;
+    numberOfFrames--;
     while (numberOfFrames--) {
         Mat greyFrame = imread("camera_video\\frame_" + to_string(countOfFrames++) + ".png", 0);
         GaussianBlur(greyFrame, greyFrame, Size(5, 5), 0);
@@ -52,7 +73,7 @@ int main() {
         vector<vector<Point>> contours;
 
         Mat output = Mat::zeros(greyFrame.size(), CV_8UC3);
-        findContours(threshFrame, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);        
+        cv::findContours(threshFrame, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE);        
 
         //Achar os centroides
         struct centroides { // Struct que guardara os centroids
@@ -83,7 +104,7 @@ int main() {
                 if (!c.visited[i]) { // Se o centroid nao tiver sido visitado ainda, compare ele com os demais
                     for (size_t j = i + 1; j < c.centroids.size(); j++) {
                         if (c.visited[j]) continue; // Se o centroid ja foi visitado, pula pro proximo
-                        cout << abs(c.centroids[i].x - c.centroids[j].x) << "  " << abs(c.centroids[i].y - c.centroids[j].y) << endl;
+                        std::cout << abs(c.centroids[i].x - c.centroids[j].x) << "  " << abs(c.centroids[i].y - c.centroids[j].y) << endl;
                         if (abs(c.centroids[i].x - c.centroids[j].x) <= 30 && abs(c.centroids[i].y - c.centroids[j].y) <= 30) { // abs serve para achar o modulo, se o modulo da diferenca for menor/igual a 20 entra
                             if (contours[biggestPoint].size() < contours[j].size()) biggestPoint = j;
                             c.visited[j] = 1;
@@ -146,7 +167,7 @@ int main() {
         vector<vector<Point>> contours;
 
         Mat output = Mat::zeros(frameBiggestContour.size(), CV_8UC3);
-        findContours(frameBiggestContour, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE); //Contornos encontrados
+        cv::findContours(frameBiggestContour, contours, hierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE); //Contornos encontrados
         int count2 = 0; // Contador para percorrer os Contornos
         int maxContour = 0; // Qtdade de pontos do contorno
         int biggestContour = 0; //Index do maior raio
@@ -176,9 +197,9 @@ int main() {
             threshold(nextFrame, nextFrame, 200, 255, THRESH_BINARY);
             vector<Vec4i> nextHierarchy;
             vector<vector<Point>> nextContours;
-            findContours(nextFrame, nextContours, nextHierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE); //Contornos encontrados
+            cv::findContours(nextFrame, nextContours, nextHierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE); //Contornos encontrados
             if (!contours.size()) {
-                cout << "Acabou aqui" << endl;
+                std::cout << "Acabou aqui" << endl;
                 break;
             }
             //Se o valor do beforeCheckDuration nao mudar, e pq nenhum raio passou no pointPolygonTest
@@ -194,7 +215,7 @@ int main() {
                     centroide.x = mu.m10 / mu.m00;
                     centroide.y = mu.m01 / mu.m00;
                     duration++;
-                    cout << isInside << " e frame numero: " << nextIndex << " e centroide: " << centroide << endl;
+                    std::cout << isInside << " e frame numero: " << nextIndex << " e centroide: " << centroide << endl;
                     break;
                 }
             }
