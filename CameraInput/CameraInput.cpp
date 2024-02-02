@@ -57,8 +57,10 @@ int main() {
 
     inputThread.join();
 
-    // Vetores que guardarao as maiores areas e o index de cada maior contorno, por frame
+    // Vetores que guardarao as maiores areas por frame e quais centroides ja foram visitados
     vector<double> biggestAreas(numberOfFrames, 0);
+    vector<vector<short int>> matrixVisited(numberOfFrames);
+    vector<vector<Point2f>> finalCentroidsReal(numberOfFrames);
 
     int countOfFrames = 1;
     numberOfFrames--;
@@ -87,6 +89,8 @@ int main() {
 
         // Print do frame
         printf("\n%d:\n\n", countOfFrames);
+
+        //Loop para pegar todos os centroides
         for (size_t i = 0; i < contours.size(); ++i) {
             // Calcular os moments
             Moments mu = moments(contours[i]);
@@ -104,7 +108,6 @@ int main() {
                 if (!c.visited[i]) { // Se o centroid nao tiver sido visitado ainda, compare ele com os demais
                     for (size_t j = i + 1; j < c.centroids.size(); j++) {
                         if (c.visited[j]) continue; // Se o centroid ja foi visitado, pula pro proximo
-                        std::cout << abs(c.centroids[i].x - c.centroids[j].x) << "  " << abs(c.centroids[i].y - c.centroids[j].y) << endl;
                         if (abs(c.centroids[i].x - c.centroids[j].x) <= 30 && abs(c.centroids[i].y - c.centroids[j].y) <= 30) { // abs serve para achar o modulo, se o modulo da diferenca for menor/igual a 20 entra
                             if (contours[biggestPoint].size() < contours[j].size()) biggestPoint = j;
                             c.visited[j] = 1;
@@ -114,7 +117,9 @@ int main() {
                 }
                 c.visited[i] = 1;
             }
-
+            std::cout << finalCentroids << endl;
+            matrixVisited[countOfFrames-1].resize(finalCentroids.size(), 0);
+            finalCentroidsReal[countOfFrames-1] = finalCentroids;
 
         }
         else {
@@ -143,6 +148,64 @@ int main() {
             biggestAreas[countOfFrames - 1] = totalArea;
         }
 
+    }
+
+    if (scene == 1) {
+        for (size_t k = 1; k < countOfFrames - 1; k++) {
+            std::cout << "TO NO FRAME = " << k << endl;
+            //Calcular centroide desse raio para realizar pointPolygonTest
+            //Realizando tratamento da imagem pra achar novamente o contorno
+
+
+            for (size_t j = 0; j < finalCentroidsReal[k].size(); j++) {
+                Point2f zero(0,0);
+                if (matrixVisited[k][j] == 1 || finalCentroidsReal[k][j] != finalCentroidsReal[k][j] || finalCentroidsReal[k][j] == zero) continue;
+                std::cout << "TO NO CONTORNO = " << j << endl;
+                int duration = 1;
+                Point2f centroide = finalCentroidsReal[k][j];
+                matrixVisited[k][j] = 1;
+                int nextIndex = k + 1;
+                while (true)
+                {
+                    //Agora achar duracao de cada centroide do frame atual
+                    Mat nextFrame = imread("camera_video\\frame_" + to_string(nextIndex) + ".png", 0);
+                    cv::GaussianBlur(nextFrame, nextFrame, Size(5, 5), 0);
+                    cv::threshold(nextFrame, nextFrame, 200, 255, THRESH_BINARY);
+                    vector<Vec4i> nextHierarchy;
+                    vector<vector<Point>> nextContours;
+                    cv::findContours(nextFrame, nextContours, nextHierarchy, RETR_LIST, CHAIN_APPROX_SIMPLE); //Contornos encontrados
+                    //Se o valor do beforeCheckDuration nao mudar, e pq nenhum raio passou no pointPolygonTest
+                    int beforeCheckDuration = duration;
+                    for (size_t i = 0; i < nextContours.size(); i++)
+                    {
+                        if (matrixVisited[nextIndex][i] == 1) continue;
+                        int isInside = pointPolygonTest(nextContours[i], centroide, true);
+                        if (isInside >= -10) {
+                            //Se estiver dentro de 10px de distancia do centroide atual, atualizar o centroide
+                            // Calcular os moments
+                            Moments mu = moments(nextContours[i]);
+                            // Calcular coordenadas dos centroides
+                            centroide.x = mu.m10 / mu.m00;
+                            centroide.y = mu.m01 / mu.m00;
+                            duration++;
+                            std::cout << isInside << " e frame numero: " << nextIndex << " e centroide: " << centroide << endl;
+                            //Colocar como visitado
+                            matrixVisited[nextIndex][i] = 1;
+                            break;
+                        }
+                    }
+                    // Quando chegar no frame pra frente que o raio acaba, inverte o count pra comecar a procurar quando ele comeca
+                    if (beforeCheckDuration == duration) {
+                        //Calculo do centroide do Rocha
+                        //Salvamento da duracao e do valor do centroide
+                        std::cout << "Duracao = " << duration << endl;
+                        break;
+                    }
+                    nextIndex++;
+                }
+
+            }
+        }
     }
 
     if (scene == 2) {
