@@ -108,17 +108,26 @@ int main() {
         biggestAreas[countOfFrames - 1].resize(contours.size(), 0);
         for (size_t i = 0; i < c.centroids.size(); i++) {
             if (!c.visited[i]) { // Se o centroid nao tiver sido visitado ainda, compare ele com os demais
-                int biggestPoint = i;
+                double areasSum = contourArea(contours[i]), xSum = (c.centroids[i].x * areasSum), ySum = (c.centroids[i].y * areasSum);
                 biggestAreas[countOfFrames - 1][i] += contourArea(contours[i]);
                 for (size_t j = i + 1; j < c.centroids.size(); j++) {
                     if (c.visited[j]) continue; // Se o centroid ja foi visitado, pula pro proximo
                     if (twoPointDistance(c.centroids[i], c.centroids[j]) <= ::distance) { // Se a distancia entre os centroides for menor/igual ao valor da distancia, entra
-                        if (contours[biggestPoint].size() < contours[j].size()) biggestPoint = j; // Se o tamanho do maior contorno achado ate agora for menor que o contorno a ser comparado, ele passa a ser o maior
-                        biggestAreas[countOfFrames - 1][i] += contourArea(contours[j]);
+                        double areaToSum = contourArea(contours[j]);
+                        // Somando valores para calculo do centroide apropriado
+                        areasSum += areaToSum;
+                        xSum += (c.centroids[j].x * areaToSum);
+                        ySum += (c.centroids[j].y * areaToSum);
+                        
+                        // Somando valor da area do raio no vetor de areas
+                        biggestAreas[countOfFrames - 1][i] += areaToSum;
                         c.visited[j] = 1;
                     }
                 }
-                allCentroids[countOfFrames - 1][i] = c.centroids[biggestPoint];
+                Point2f centroidAfterWeight;
+                centroidAfterWeight.x = xSum / areasSum;
+                centroidAfterWeight.y = ySum / areasSum;
+                allCentroids[countOfFrames - 1][i] = centroidAfterWeight;
             }
             c.visited[i] = 1;
         }
