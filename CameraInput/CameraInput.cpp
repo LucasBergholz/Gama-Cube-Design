@@ -3,6 +3,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <opencv2/imgproc.hpp>
+#include <fstream>
 #include <thread>
 
 using namespace std;
@@ -190,8 +191,11 @@ int main() {
                         Point2f centroideSum;
                         centroideSum.x = xSum / areasSum;
                         centroideSum.y = ySum / areasSum;
-                        // Salvamento da duracao e do valor do centroide
-                        std::cout << "Duracao = " << duration << " e Centroide = " << centroideSum << endl;
+                        // Salvamento da duracao e do valor do centroide em txt
+                        fstream newfile;
+                        newfile.open("raios.txt", ios::app);
+                        newfile << "Inicio = " << k << " e Fim = " << nextIndex-1 << " e Duracao = " << duration << " e Centroide = " << centroideSum << endl;
+                        newfile.close();
                         break;
                     }
                     nextIndex++;
