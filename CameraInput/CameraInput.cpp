@@ -242,10 +242,12 @@ int main() {
             }
             if (beforeCheckDuration == duration) {
                 // Salvamento da duracao
-                if (count == -1) break;
+                if (count == -1){
+                    std::cout << "Duracao = " << duration << endl;
+                    break;
+                }
                 nextIndex = indexOfFrameOfBiggestContour;
                 count = -1;
-                std::cout << "Duracao = " << duration << endl;
             }
             nextIndex += count;
         }
