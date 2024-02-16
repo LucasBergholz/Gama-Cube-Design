@@ -54,7 +54,7 @@ int main() {
         Mat frame;
         capture >> frame;
         // Grava o frame no folder designado
-        imwrite("camera_video\\frame_" + to_string(numberOfFrames++) + ".png", frame);
+        imwrite("frame_" + to_string(numberOfFrames++) + ".png", frame);
         
         // Escolhe o tempo de distancia entre os frames
         // Adiciona um pequeno delay
@@ -72,7 +72,7 @@ int main() {
     int countOfFrames = 1;
     numberOfFrames--;
     while (numberOfFrames--) {
-        Mat greyFrame = imread("camera_video\\frame_" + to_string(countOfFrames++) + ".png", 0);
+        Mat greyFrame = imread("frame_" + to_string(countOfFrames++) + ".png", 0);
         GaussianBlur(greyFrame, greyFrame, Size(5, 5), 0);
         Mat threshFrame;
 
