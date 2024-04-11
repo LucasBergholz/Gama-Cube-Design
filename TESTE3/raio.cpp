@@ -5,7 +5,7 @@
 
 using namespace std;
 using namespace cv;
-
+//okawodjwaodaowkd
 int main() {
     Mat frameCinza = imread("frames_gif_01\\frame_49.png", 0);
 
